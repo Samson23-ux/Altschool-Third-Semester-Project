@@ -23,10 +23,10 @@ class Post(Base):
     id = Column(UUID, default=uuid.uuid4(), primary_key=True)
     user_id = Column(UUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     title = Column(VARCHAR(50), nullable=False, index=True)
-    title_search = Column(
-        TSVECTOR, Computed("to_tsvector('english', \"title\")", persisted=True)
-    )
     content = Column(Text, nullable=False)
+    content_search = Column(
+        TSVECTOR, Computed("to_tsvector('english', \"content\")", persisted=True)
+    )
     created_at = Column(DateTime, nullable=False)
 
     user = relationship("User", back_populates="posts")
@@ -40,13 +40,15 @@ class Post(Base):
 
     images = relationship(
         "Image",
-        secondary="post_image",
+        secondary="post_images",
         back_populates="posts",
         cascade="all, delete-orphan",
-        single_parent=True
+        single_parent=True,
     )
 
-    __table_args__ = (Index("idx_title_search", title_search, postgresql_using="gin"),)
+    __table_args__ = (
+        Index("idx_content_search", content_search, postgresql_using="gin"),
+    )
 
 
 class Image(Base):
@@ -57,7 +59,7 @@ class Image(Base):
 
     posts = relationship(
         "Post",
-        secondary="post_image",
+        secondary="post_images",
         back_populates="images",
     )
 
@@ -66,7 +68,7 @@ class Like(Base):
     __tablename__ = "likes"
 
     post_id = Column(UUID, ForeignKey("posts.id", ondelete="CASCADE"), primary_key=True)
-    user_id = Column(UUID, ForeignKey("posts.id", ondelete="CASCADE"), primary_key=True)
+    user_id = Column(UUID, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     liked_at = Column(DateTime, default=datetime.now(), nullable=False)
 
     user = relationship("User", back_populates="likes")

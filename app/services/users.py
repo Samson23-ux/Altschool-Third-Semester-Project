@@ -5,7 +5,12 @@ from sqlalchemy.orm import Session
 from app.models.users import User
 from app.utils import hash_password, post_to_json, read_file
 from app.schemas.users import UserCreateV1, UserUpdateV1
-from app.core.exceptions import UserExistError, UserNotFoundError, UsersNotFoundError
+from app.core.exceptions import (
+    UserExistError,
+    UserNotFoundError,
+    UsersNotFoundError,
+    ServerError,
+)
 
 
 class UserService:
@@ -19,17 +24,23 @@ class UserService:
     ) -> list[User]:
         if sort is not None:
             if order == "desc":
-                sort_cte = (db.query(User).order_by(desc(sort))).cte("sort_cte")
+                sort_cte = db.query(User).order_by(desc(sort)).cte("sort_cte")
             else:
-                sort_cte = (db.query(User).order_by(sort)).cte("sort_cte")
+                sort_cte = db.query(User).order_by(sort).cte("sort_cte")
 
-        users = db.query(sort_cte).offset(offset).limit(limit).all()
+        users = (
+            db.query(User)
+            .join(sort_cte, User.id == sort_cte.c.id)
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
 
         if not users:
             raise UsersNotFoundError()
         return users
 
-    async def get_users_by_username(
+    async def search_users(
         self, q: str, offset: int, limit: int, db: Session
     ) -> list[User]:
         ts_query = func.websearch_to_tsquery("english", q)
@@ -44,7 +55,13 @@ class UserService:
             .cte("search_cte")
         )
 
-        search_result = db.query(search_cte).offset(offset).limit(limit).all()
+        search_result = (
+            db.query(User)
+            .join(search_cte, User.id == search_cte.c.id)
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
 
         if not search_result:
             raise UsersNotFoundError()
@@ -83,7 +100,7 @@ class UserService:
 
             if p.images:
                 for img in p.images:
-                    image = read_file(img)
+                    image = await read_file(img)
                     post["images"].append(image)
 
         return posts
@@ -92,6 +109,7 @@ class UserService:
         user_by_email = (
             db.query(User.email).filter(User.email == user_create.email).first()
         )
+
         if user_by_email:
             raise UserExistError()
 
@@ -99,9 +117,14 @@ class UserService:
 
         user_db = User(**user_create.model_dump())
 
-        db.add(user_db)
-        db.flush()
-        db.refresh(user_db)
+        try:
+            db.add(user_db)
+            db.flush()
+            db.refresh(user_db)
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            raise ServerError() from e
 
         user = await self.get_user_by_id(user_db.id, db)
         return user
@@ -113,14 +136,26 @@ class UserService:
         if not user_db:
             raise UserNotFoundError()
 
+        if user_update.email:
+            user_by_email = (
+                db.query(User.email).filter(User.email == user_update.email).first()
+            )
+            if user_by_email:
+                raise UserExistError()
+
         user_update_dict = user_update.model_dump(exclude_unset=True)
 
         for k, v in user_update_dict.items():
             setattr(user_db, k, v)
 
-        db.add(user_db)
-        db.flush()
-        db.refresh(user_db)
+        try:
+            db.add(user_db)
+            db.flush()
+            db.refresh(user_db)
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            raise ServerError() from e
 
         user = await self.get_user_by_id(user_id, db)
         return user
@@ -130,7 +165,12 @@ class UserService:
         if not user_db:
             raise UserNotFoundError()
 
-        db.delete(user_db)
+        try:
+            db.delete(user_db)
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            raise ServerError() from e
 
 
 user_service = UserService()

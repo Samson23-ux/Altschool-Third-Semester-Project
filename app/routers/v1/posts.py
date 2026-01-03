@@ -1,6 +1,6 @@
 from uuid import UUID
 from sqlalchemy.orm import Session
-from fastapi import APIRouter, Depends, Query, UploadFile
+from fastapi import APIRouter, Depends, Query, UploadFile, File
 
 from app.services.posts import post_service
 from app.core.exceptions import ServerError
@@ -10,7 +10,7 @@ from app.schemas.posts import PostCreateV1, PostUpdateV1, LikeCreate, Response
 post_router_v1 = APIRouter()
 
 
-@post_router_v1.get("/posts/feed/", status_code=200, response_class=Response)
+@post_router_v1.get("/posts/feed/", status_code=200, response_model=Response)
 async def get_posts(
     sort: str = Query(default=None, description="sort by date created"),
     order: str = Query(default=None, description="order in asc or desc"),
@@ -22,7 +22,7 @@ async def get_posts(
     return Response(message="Feed loaded successfully", data=posts)
 
 
-@post_router_v1.get("/posts/", status_code=200, response_class=Response)
+@post_router_v1.get("/posts/", status_code=200, response_model=Response)
 async def get_search_posts(
     q: str = Query(..., description="search posts with title"),
     sort: str = Query(default=None, description="sort by date created"),
@@ -35,13 +35,13 @@ async def get_search_posts(
     return Response(message="Posts retrieved successfully", data=posts)
 
 
-@post_router_v1.get("/post/{post_id}/", status_code=200, response_class=Response)
+@post_router_v1.get("/post/{post_id}/", status_code=200, response_model=Response)
 async def get_post_by_id(post_id: UUID, db: Session = Depends(get_db)):
     post = await post_service.get_post_by_id(post_id, db)
     return Response(message="Post retrieved successfully", data=post)
 
 
-@post_router_v1.post("/posts/", status_code=201, response_class=Response)
+@post_router_v1.post("/posts/", status_code=201, response_model=Response)
 async def create_post(post_create: PostCreateV1, db: Session = Depends(get_db)):
     try:
         post_db = await post_service.create_post(post_create, db)
@@ -53,13 +53,13 @@ async def create_post(post_create: PostCreateV1, db: Session = Depends(get_db)):
         raise ServerError() from e
 
 
-@post_router_v1.post("/posts/images/upload/", status_code=201, response_class=Response)
-async def upload_images(post_images: list[UploadFile]):
+@post_router_v1.post("/posts/images/upload/", status_code=201, response_model=Response)
+async def upload_images(post_images: list[UploadFile] = File(..., description="Upload post images")):
     images = await post_service.upload_image(post_images)
     return Response(message="Images uploaded successfully", data=images)
 
 
-@post_router_v1.post("/posts/{post_id}/like/", status_code=201, response_class=Response)
+@post_router_v1.post("/posts/{post_id}/like/", status_code=201, response_model=Response)
 async def like_post(
     post_id: UUID, like_create: LikeCreate, db: Session = Depends(get_db)
 ):
@@ -72,7 +72,7 @@ async def like_post(
         raise ServerError() from e
 
 
-@post_router_v1.patch("/posts/{post_id}/", status_code=200, response_class=Response)
+@post_router_v1.patch("/posts/{post_id}/", status_code=200, response_model=Response)
 async def update_post(
     post_id: UUID, post_update: PostUpdateV1, db: Session = Depends(get_db)
 ):

@@ -1,4 +1,5 @@
-from typing import Optional, Any
+from uuid import UUID
+from typing import Optional
 from pydantic import BaseModel, EmailStr
 
 class UserBaseV1(BaseModel):
@@ -10,7 +11,7 @@ class UserCreateV1(UserBaseV1):
     pass
 
 class UserInDBV1(UserBaseV1):
-    pass
+    id: UUID
 
 class PasswordUpdateV1(BaseModel):
     old_password: str
@@ -22,4 +23,4 @@ class UserUpdateV1(BaseModel):
 
 class Response(BaseModel):
     message: str
-    data: Optional[Any] = None
+    data: Optional[dict | list[dict]] = None

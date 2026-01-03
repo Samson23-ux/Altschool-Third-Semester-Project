@@ -32,7 +32,13 @@ class PostService:
             else:
                 sort_cte = db.query(Post).order_by(sort).cte("sort_cte")
 
-        feed_posts = db.query(sort_cte).offset(offset).limit(limit).all()
+        feed_posts = (
+            db.query(Post)
+            .join(sort_cte, Post.id == sort_cte.c.id)
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
 
         if not feed_posts:
             raise PostsNotFoundError()
@@ -43,7 +49,7 @@ class PostService:
 
             if p.images:
                 for img in p.images:
-                    image = read_file(img)
+                    image = await read_file(img)
                     post["images"].append(image)
 
         return feed_posts
@@ -75,7 +81,13 @@ class PostService:
             else:
                 sort_cte = db.query(Post).order_by(sort).cte("sort_cte")
 
-        search_posts = db.query(sort_cte).offset(offset).limit(limit).all()
+        search_posts = (
+            db.query(Post)
+            .join(sort_cte, Post.id == sort_cte.c.id)
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
 
         if not search_posts:
             raise PostsNotFoundError()
@@ -86,7 +98,7 @@ class PostService:
 
             if p.images:
                 for img in p.images:
-                    image = read_file(img)
+                    image = await read_file(img)
                     post["images"].append(image)
 
         return search_posts
@@ -102,11 +114,11 @@ class PostService:
 
         if post_db.images:
             for img in post_db.images:
-                image = read_file(img)
+                image = await read_file(img)
                 post["images"].append(image)
 
         return post
-    
+
     async def get_like(self, post_id: UUID, user_id: UUID, db: Session):
         like = (
             db.query(Like)
@@ -167,7 +179,7 @@ class PostService:
         return like
 
     async def upload_image(self, images: UploadFile):
-        images = write_file(images)
+        images = await write_file(images)
         return images
 
     async def update_post(
@@ -194,7 +206,7 @@ class PostService:
 
         if post_update_db.images:
             for img in post_update_db.images:
-                image = read_file(img)
+                image = await read_file(img)
                 post["images"].append(image)
 
         return post
@@ -208,7 +220,7 @@ class PostService:
 
         if not post_db:
             raise PostsNotFoundError()
-        
+
         like = await self.get_like(post_db.id, user_db.id, db)
 
         post_db.likes.remove(like)

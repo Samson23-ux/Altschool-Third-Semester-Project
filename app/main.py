@@ -59,8 +59,7 @@ app.add_exception_handler(
         initial_detail={
             "error_code": "User Exist",
             "message": "User provided an existing email",
-            "resolution": """Check the provided email to
-                            confirm if does not exist already""",
+            "resolution": """Check the provided email to confirm if does not exist already""",
         },
     ),
 )

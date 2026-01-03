@@ -1,5 +1,5 @@
 from uuid import UUID
-from typing import Optional, Any
+from typing import Optional
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -10,6 +10,7 @@ class PostBaseV1(BaseModel):
     image: Optional[list] = None
 
 class PostInDBV1(PostBaseV1):
+    id: UUID
     created_at: datetime
 
 class PostCreateV1(PostBaseV1):
@@ -25,4 +26,4 @@ class PostUpdateV1(BaseModel):
 
 class Response(BaseModel):
     message: str
-    data: Optional[Any] = None
+    data: Optional[dict | list[dict]] = None

@@ -11,9 +11,6 @@ class User(Base):
 
     id = Column(UUID, default=uuid.uuid4(), primary_key=True)
     username = Column(VARCHAR(50), nullable=False)
-    username_search = Column(
-        TSVECTOR, Computed("to_tsvector('english', \"username\")", persisted=True)
-    )
     email = Column(VARCHAR(50), unique=True, nullable=False, index=True)
     password = Column(Text, nullable=False)
 
@@ -33,5 +30,10 @@ class User(Base):
     )
 
     __table_args__ = (
-        Index("idx_fullname_search", username_search, postgresql_using="gin"),
+        Index(
+            "idx_username_trgm",
+            username,
+            postgresql_using="gin",
+            postgresql_ops={"username": "gin_trgm_ops"},
+        ),
     )
