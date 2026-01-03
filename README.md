@@ -51,7 +51,7 @@ DATABASE_URL=postgresql+psycopg2://user:pass@localhost:5432/dbname
 
 ```powershell
 # from project root (Altschool-Project)
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+uvicorn app.main:app --reload
 ```
 
 Open the interactive docs at: `http://127.0.0.1:8000/docs` (Swagger UI) or `http://127.0.0.1:8000/redoc`.
