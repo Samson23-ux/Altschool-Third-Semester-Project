@@ -10,7 +10,6 @@ class PostBaseV1(BaseModel):
     image: Optional[list] = None
 
 class PostInDBV1(PostBaseV1):
-    id: UUID
     created_at: datetime
 
 class PostCreateV1(PostBaseV1):
@@ -24,6 +23,7 @@ class PostUpdateV1(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
 
+
 class Response(BaseModel):
     message: str
-    data: Optional[dict | list[dict]] = None
+    data: Optional[dict | list[dict] | list] = None

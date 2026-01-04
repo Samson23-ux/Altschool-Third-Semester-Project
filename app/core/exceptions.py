@@ -38,6 +38,10 @@ class PostNotFoundError(AppException):
     '''No Post found with the provided id'''
     pass
 
+class InvalidImageUrlError(AppException):
+    '''No Image found with the provided url'''
+    pass
+
 def create_exception_handler(
     status_code: int, initial_detail: Any
 ) -> Callable[[Request, Exception], JSONResponse]:

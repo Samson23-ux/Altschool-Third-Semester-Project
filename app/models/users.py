@@ -1,7 +1,6 @@
 import uuid
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import TSVECTOR
-from sqlalchemy import Column, VARCHAR, Text, Computed, Index, UUID
+from sqlalchemy import Column, VARCHAR, Text, Index, UUID
 
 from app.database.base import Base
 

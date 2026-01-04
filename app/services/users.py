@@ -3,7 +3,7 @@ from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 
 from app.models.users import User
-from app.utils import hash_password, post_to_json, read_file
+from app.utils import hash_password, post_to_json
 from app.schemas.users import UserCreateV1, UserUpdateV1
 from app.core.exceptions import (
     UserExistError,
@@ -22,19 +22,24 @@ class UserService:
         order: str,
         sort: str | None = None,
     ) -> list[User]:
-        if sort is not None:
+        is_sort = False
+        if sort:
             if order == "desc":
                 sort_cte = db.query(User).order_by(desc(sort)).cte("sort_cte")
             else:
                 sort_cte = db.query(User).order_by(sort).cte("sort_cte")
+            is_sort = True
 
-        users = (
-            db.query(User)
-            .join(sort_cte, User.id == sort_cte.c.id)
-            .offset(offset)
-            .limit(limit)
-            .all()
-        )
+        if is_sort:
+            users = (
+                db.query(User)
+                .join(sort_cte, User.id == sort_cte.c.id)
+                .offset(offset)
+                .limit(limit)
+                .all()
+            )
+        else:
+            users = db.query(User).offset(offset).limit(limit).all()
 
         if not users:
             raise UsersNotFoundError()
@@ -43,15 +48,10 @@ class UserService:
     async def search_users(
         self, q: str, offset: int, limit: int, db: Session
     ) -> list[User]:
-        ts_query = func.websearch_to_tsquery("english", q)
-        search_rank = func.ts_rank_cd(User.username_search, ts_query).label(
-            "search_rank"
-        )
-
         search_cte = (
-            db.query(User, search_rank)
-            .filter(User.username_search.op("@@")(ts_query))
-            .order_by(search_rank.desc())
+            db.query(User)
+            .filter(func.lower(User.username).op("%")(func.lower(q)))
+            .order_by(func.similarity(User.username, q).desc())
             .cte("search_cte")
         )
 
@@ -93,17 +93,18 @@ class UserService:
         for like in user_likes:
             posts.append(like.post)
 
+        user_liked_posts = []
         for p in posts:
             post = post_to_json(p)
             post["images"] = []
-            post["likes"] = p.likes
+            post["likes"] = len(p.likes)
 
             if p.images:
                 for img in p.images:
-                    image = await read_file(img)
-                    post["images"].append(image)
+                    post["images"].append(img.image_url)
+            user_liked_posts.append(post)
 
-        return posts
+        return user_liked_posts
 
     async def create_user(self, user_create: UserCreateV1, db: Session) -> User:
         user_by_email = (

@@ -5,7 +5,7 @@ from passlib.context import CryptContext
 from fastapi.encoders import jsonable_encoder
 
 from app.models.users import User
-from app.models.posts import Post
+from app.models.posts import Post, Like
 from app.database.session import SessionLocal
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -36,7 +36,10 @@ def user_to_json(user: User):
 
 
 def post_to_json(post: Post):
-    return jsonable_encoder(post, exclude={"title_search"})
+    return jsonable_encoder(post, exclude={"content_search"})
+
+def like_to_json(like: Like):
+    return jsonable_encoder(like)
 
 
 async def write_file(image_file: list[UploadFile]):
@@ -52,13 +55,13 @@ async def write_file(image_file: list[UploadFile]):
     return image_urls
 
 
-async def read_file(filename: str):
-    async with aiofiles.open(f"app\\uploads\\images\\{filename}", "r") as img:
-        image = await img.read()
-    return image
+def generate_file_path(filename: str):
+    filepath = f"app\\uploads\\images\\{filename}"
+    return filepath
 
 
 def delete_file(filename: str):
     file = Path(f"app\\uploads\\images\\{filename}")
+    print(file)
     if file.exists():
         file.unlink()

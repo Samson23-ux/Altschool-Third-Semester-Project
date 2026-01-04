@@ -30,6 +30,7 @@ class Post(Base):
     created_at = Column(DateTime, nullable=False)
 
     user = relationship("User", back_populates="posts")
+
     likes = relationship(
         "Like",
         back_populates="post",

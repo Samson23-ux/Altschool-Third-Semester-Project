@@ -12,14 +12,19 @@ from app.core.exceptions import (
     PostNotFoundError,
     PostsNotFoundError,
     create_exception_handler,
+    InvalidImageUrlError
 )
 from app.routers.v1.users import user_router_v1
 from app.routers.v1.posts import post_router_v1
 
-app = FastAPI(title=settings.API_TITLE, description=settings.DESCRIPTION)
+app = FastAPI(
+    title=settings.API_TITLE,
+    description=settings.DESCRIPTION,
+    version=settings.API_VERSION_1,
+)
 
-app.include_router(user_router_v1, prefix=settings.API_VERSION_1, tags=["Users"])
-app.include_router(post_router_v1, prefix=settings.API_VERSION_1, tags=["Posts"])
+app.include_router(user_router_v1, prefix=settings.API_VERSION_1_PREFIX, tags=["Users"])
+app.include_router(post_router_v1, prefix=settings.API_VERSION_1_PREFIX, tags=["Posts"])
 
 
 @app.exception_handler(500)
@@ -37,6 +42,18 @@ app.add_exception_handler(
         initial_detail={
             "error_code": "Server error",
             "message": "Oops! Something went wrong",
+        },
+    ),
+)
+
+app.add_exception_handler(
+    exc_class_or_status_code=InvalidImageUrlError,
+    handler=create_exception_handler(
+        status_code=400,
+        initial_detail={
+            "error_code": "Inavlid URL",
+            "message": "No Image exist with the provided image url for the post",
+             "resolution": """Check that the provided url maatches with the post""",
         },
     ),
 )
