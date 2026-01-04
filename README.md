@@ -9,7 +9,8 @@ This project provides endpoints to create and manage users and posts (including 
 - Create, update, delete posts
 - Upload and delete post images
 - Like / unlike posts
-- Full-text search for posts and users
+- Full-text search for posts content
+- Pg Triagram search for username
 
 ## Tech Stack
 
@@ -39,12 +40,12 @@ pip install fastapi uvicorn sqlalchemy pydantic pydantic-settings
 ## Environment variables
 The project uses `pydantic_settings.Settings`. Set the following at minimum:
 
-- `DATABASE_URL` — the SQLAlchemy database URL for your database (e.g. `postgresql+psycopg2://user:pass@localhost:5432/dbname`).
+- `DATABASE_URL` — the SQLAlchemy database URL for your database (e.g. `postgresql+psycopg://user:pass@localhost:5432/dbname`).
 
 You can create a `.env` file in the project root with:
 
 ```
-DATABASE_URL=postgresql+psycopg2://user:pass@localhost:5432/dbname
+DATABASE_URL=postgresql+psycopg://user:pass@localhost:5432/dbname
 ```
 
 ## Run the app (development)
@@ -58,17 +59,18 @@ Open the interactive docs at: `http://127.0.0.1:8000/docs` (Swagger UI) or `http
 
 ### Users (example routes)
 - `GET /users/` — list users (supports `offset`, `limit`, `sort`, `order`).
-- `GET /users/?q=...` — search users by username.
-- `GET /users/{username}/` — get user by username.
+- `GET /users/search/?q=...` — search users by username.
 - `GET /users/{user_id}/` — get user by id.
+- `GET /users/{user_id}/likes/` - get user likes
 - `POST /users/` — create user (send JSON payload according to `UserCreateV1` schema).
 - `PATCH /users/{user_id}/` — update user (send only fields to update).
 - `DELETE /users/{user_id}/` — delete user.
 
 ### Posts (example routes)
 - `GET /posts/feed/` — paginated feed (supports `offset`, `limit`, `sort`, `order`).
-- `GET /posts/?q=...` — search posts by title.
-- `GET /post/{post_id}/` — get single post by id.
+- `GET /posts/search/?q=...` — search posts.
+- `GET /posts/{post_id}/` — get single post by id.
+- `GET /posts/{post_id}/images/{image_url}/load/` - load post image
 - `POST /posts/` — create a post (JSON matching `PostCreateV1`).
 - `POST /posts/images/upload/` — upload images for posts (multipart form upload of files).
 - `POST /posts/{post_id}/like/` — like a post.
@@ -80,6 +82,7 @@ Open the interactive docs at: `http://127.0.0.1:8000/docs` (Swagger UI) or `http
 ## Database
 - Ensure `DATABASE_URL` points to a running DB (Postgres recommended for full-text search used in services).
 - If using Postgres full-text search features in services, make sure the DB has the required extensions and tables.
+- If using Postgres triagram search features in services, make sure the extension is enabled
 - If you use Alembic or migrations, run those here (project does not include migrations by default in this README).
 
 ## Troubleshooting
